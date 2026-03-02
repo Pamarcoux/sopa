@@ -61,7 +61,7 @@ Read Data
 adata_all = sc.read_h5ad("/home/paul.marcoux/Postdoc/Python/sopa/workflow/data/Nathalie_test/processed/adata_merged_leiden_0_5.h5ad")
 ```
 
-## Graphs
+## Clustering and Umap visualization
 
 ### Umap of unsupervised leiden clustering with resolution 0.5
 
@@ -69,23 +69,8 @@ adata_all = sc.read_h5ad("/home/paul.marcoux/Postdoc/Python/sopa/workflow/data/N
 # Plot Umap
 sc.pl.umap(adata_all, color = 'leiden')
 ```
-
-### Leiden Clustering projection on slide ROI
-
+### Expression of markers in each clusters
 ```{python}
-for sample_name in adata_all.obs["sample"].unique():
-    subset = adata_all[adata_all.obs["sample"] == sample_name]
-    sc.pl.embedding(
-        subset,
-        basis="spatial",
-        color="leiden",
-        title=sample_name,
-        show=False,
-        size=1.5,
-    )
-```
-```{python}
-#| eval: false
 #| include: false
 marker_list_heatmap_new = [
     # T cells
@@ -142,8 +127,6 @@ marker_list_heatmap_new = [
 ]
 ```
 ```{python}
-#| eval: false
-#| include: false
 sc.pl.matrixplot(
     adata_all,
     groupby="leiden",
@@ -155,4 +138,19 @@ sc.pl.matrixplot(
     colorbar_title="",   # Remove colorbar title
     show=True,          # Don't show immediately
 )
+```
+
+## Leiden Clustering projection on slide ROI
+
+```{python}
+for sample_name in adata_all.obs["sample"].unique():
+    subset = adata_all[adata_all.obs["sample"] == sample_name]
+    sc.pl.embedding(
+        subset,
+        basis="spatial",
+        color="leiden",
+        title=sample_name,
+        show=False,
+        size=1.5,
+    )
 ```
