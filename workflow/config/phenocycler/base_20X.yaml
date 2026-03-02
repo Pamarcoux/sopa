@@ -1,24 +1,93 @@
 # For parameters details, see this commented example: https://github.com/gustaveroussy/sopa/blob/main/workflow/config/example_commented.yaml
 read:
   technology: phenocycler
+  kwargs:
+    channels_renaming: {
+    '0': 'DAPI',
+    '1': 'CD31',
+    '2': 'CD107a',
+    '3': 'CD4',
+    '4': 'Keratin 14',
+    '5': 'SMA',
+    '6': 'CD68',
+    '7': 'CD44',
+    '8': 'Vimentin',
+    '9': 'CD66',
+    '10': 'E-cadherin',
+    '11': 'IDO1',
+    '12': 'CD45RO',
+    '13': 'IFNG',
+    '14': 'CD21',
+    '15': 'CD11c',
+    '16': 'CD45',
+    '17': 'HLA-DR',
+    '18': 'CD34',
+    '19': 'iNOS',
+    '20': 'CD38',
+    '21': 'Histone H3 (p Ser28)',
+    '22': 'CD8',
+    '23': 'PCNA',
+    '24': 'FOXP3',
+    '25': 'CD57',
+    '26': 'Ki67',
+    '27': 'Granzyme B',
+    '28': 'HLA-A',
+    '29': 'CD20',
+    '30': 'Collagen IV',
+    '31': 'CD14',
+    '32': 'Pan-Cytokeratin',
+    '33': 'PD-1',
+    '34': 'VISTA',
+    '35': 'Caveolin',
+    '36': 'TCF-1',
+    '37': 'TOX',
+    '38': 'EpCAM',
+    '39': 'ICOS',
+    '40': 'CD163',
+    '41': 'Keratin 5',
+    '42': 'PD-L1',
+    '43': 'ER',
+    '44': 'Keratin 8/18',
+    '45': 'CD3e',
+    '46': 'CD79a',
+    '47': 'Beta-actin',
+    '48': 'Bcl-2',
+    '49': 'b-Catenin1',
+    '50': 'CD56',
+    '51': 'MPO',
+    '52': 'TP63',
+    '53': 'CD39',
+    '54': 'LAG3',
+    '55': 'SOX2',
+    '56': 'CD209',
+    '57': 'Podoplanin',
+    '58': 'CD11b',
+    '59': 'GP100',
+    '60': 'CD206',
+}
 
 patchify:
   patch_width_pixel: 3000
-  patch_overlap_pixel: 40
+  patch_overlap_pixel: 50
 
 segmentation:
+  tissue:
+    mode: staining
+
   cellpose:
     diameter: 12
-    channels: [ "DAPI" ]
+    channels: [ "DAPI","Beta-actin"]
     flow_threshold: 2
     cellprob_threshold: -6
     min_area: 38
+    gpu: False
 
 aggregate:
   aggregate_channels: true
   min_intensity_ratio: 0.1
   expand_radius_ratio: 0.1
+#  no_overlap: True
 
 explorer:
-  ram_threshold_gb: 4
+  ram_threshold_gb: 1
   pixel_size: 0.5

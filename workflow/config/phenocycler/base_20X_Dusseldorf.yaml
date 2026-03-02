@@ -1,0 +1,87 @@
+# For parameters details, see this commented example: https://github.com/gustaveroussy/sopa/blob/main/workflow/config/example_commented.yaml
+read:
+  technology: phenocycler
+  kwargs:
+    channels_renaming: {
+    '0': 'DAPI',
+    '1': 'TIM3',
+    '2': 'CD4 Cy7',
+    '3': 'CCR7',
+    '4': 'BCL-6',
+    '5': 'PD-L1',
+    '6': 'Helios',
+    '7': 'CD38',
+    '8': 'CD69',
+    '9': 'IKZF3',
+    '10': 'c-myc',
+    '11': 'BCL-2',
+    '12': 'CD68',
+    '13': 'LAG3',
+    '14': 'TCF1',
+    '15': 'CD57',
+    '16': 'CD56',
+    '17': 'CD138',
+    '18': 'Lambda',
+    '19': 'NOXA',
+    '20': 'CD25',
+    '21': 'p53',
+    '22': 'CD19',
+    '23': 'FoxP3',
+    '24': 'Podoplanin',
+    '25': 'CXCR3',
+    '26': 'CXCR5',
+    '27': 'IRF4',
+    '28': 'SPARC',
+    '29': 'ICOS',
+    '30': 'CD21',
+    '31': 'CD31',
+    '32': 'CD163',
+    '33': 'Kappa',
+    '34': 'CD4',
+    '35': 'CD15',
+    '36': 'CD45RO',
+    '37': 'Collagen IV',
+    '38': 'CD34',
+    '39': 'CD20',
+    '40': 'Na/K ATPase',
+    '41': 'HLA-DR',
+    '42': 'CD11b',
+    '43': 'PD1',
+    '44': 'CD90',
+    '45': 'PAX5',
+    '46': 'CD8',
+    '47': 'CD11c',
+    '48': 'CD79a',
+    '49': 'CD45RA',
+    '50': 'Granzyme B',
+    '51': 'CD3',
+    '52': 'CD45',
+    '53': 'ki-67'
+}
+
+
+patchify:
+  patch_width_pixel: 3000
+  patch_overlap_pixel: 50
+
+segmentation:
+  tissue:
+    mode: staining
+
+  cellpose:
+    diameter: 12
+    channels: [ "DAPI","Na/K ATPase"]
+    flow_threshold: 2
+    cellprob_threshold: -6
+    min_area: 38
+    gpu: False
+
+aggregate:
+  aggregate_channels: true
+  min_intensity_ratio: 0.1
+  expand_radius_ratio: 0.1
+#  no_overlap: True
+
+explorer:
+  ram_threshold_gb: 1
+  pixel_size: 0.5

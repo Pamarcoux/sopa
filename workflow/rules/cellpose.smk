@@ -6,6 +6,7 @@ rule patch_segmentation_cellpose:
         paths.temp_dir("cellpose") / "{index}.parquet",
     conda:
         "sopa"
+    threads: 16
     params:
         cellpose = args["segmentation"]["cellpose"].as_cli(),
         sdata_path = paths.sdata_path,

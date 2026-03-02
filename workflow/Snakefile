@@ -4,6 +4,13 @@ config = validate_config(config) # validate the Snakemake config
 paths = WorkflowPaths(config) # object handling the paths to the files that will be created
 args = Args(paths, config) # object handling the arguments passed to the workflow
 
+import warnings
+os.environ["PYTHONWARNINGS"] = (
+    "ignore::FutureWarning,"
+    "ignore::UserWarning"
+)
+os.environ["DASK_DATAFRAME__QUERY_PLANNING"] = "True"
+
 ### Segmentation rules
 include: "rules/utils.smk"
 include: "rules/cellpose.smk"

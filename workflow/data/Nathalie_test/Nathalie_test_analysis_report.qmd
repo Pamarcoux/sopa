@@ -1,0 +1,206 @@
+---
+title: "Nathalie_test_analysis_report"
+format: html
+jupyter: sopa
+---
+```{python}
+
+```
+
+
+```{r Env}
+library(reticulate)
+use_condaenv("sopa", required = TRUE)
+```
+
+```{python Import}
+# import the python packages
+import scanpy as sc
+import spatialdata as sd
+import pandas as pd
+import numpy as np
+import h5py
+import anndata as ad
+import spatialdata_io as sio
+import spatialdata_plot
+import matplotlib.pyplot as plt
+import warnings
+import os
+import squidpy as sq
+
+warnings.filterwarnings("ignore")
+```
+```{python Functions}
+def clr_normalization(x):
+    """
+    Perform Centered Log-Ratio normalization on a vector or array.
+
+    This is a Python implementation of the CLR function from Seurat:
+    clr_function <- function(x) {
+      return(log1p(x = x / (exp(x = sum(log1p(x = x[x > 0]), na.rm = TRUE) / length(x = x)))))
+    }
+
+    Parameters:
+    -----------
+    x : array-like
+        Input data to normalize
+
+    Returns:
+    --------
+    array-like
+        CLR normalized data
+    """
+    x = np.asarray(x)
+
+    # Create mask for positive values
+    positive_mask = x > 0
+
+    # Calculate the geometric mean of positive values
+    # In log space: exp(sum(log(1+x)) / n)
+    if np.any(positive_mask):
+        log1p_sum = np.sum(np.log1p(x[positive_mask]))
+        n = len(x)  # Use full length including zeros as in the R function
+        geometric_mean = np.exp(log1p_sum / n)
+    else:
+        # Handle the case where there are no positive values
+        geometric_mean = 1
+
+    # Divide by geometric mean and apply log1p
+    return np.log1p(x / geometric_mean)
+
+def normalize_single_codex_slide(adata, sample_id, verbose=True):
+    """
+    Normalize a single CODEX slide before merging
+    """
+    if verbose:
+        print(f"Normalizing slide {sample_id}...")
+
+    # Add slide identifier
+    adata.obs["batch"] = sample_id
+
+    # 2. Filter Minimum count
+    sc.pp.filter_cells(adata, min_counts=1)
+
+    # sc.pp.normalize_total(adata, target_sum=1e4)
+    # sc.pp.log1p(adata)
+
+    # Apply CLR normalization to the expression matrix
+    X_clr = np.zeros_like(adata.X)     # Create a copy of the raw data
+
+    # Apply CLR normalization per cell (row-wise)
+    for i in range(adata.n_obs):
+        X_clr[i, :] = clr_normalization(adata.X[i, :])
+
+    # Replace the data with CLR-normalized values
+    adata.X = X_clr
+
+    # 3. Scale the data (important for CODEX due to different antibody intensities)
+    sc.pp.scale(adata, max_value=10)
+
+    # 4. Set all features as highly variable (since CODEX panels are targeted)
+    adata.var['highly_variable'] = True
+    adata.var['highly_variable_rank'] = range(len(adata.var))
+
+    return adata
+```
+```{python Load_data}
+sdata = sd.read_zarr("/home/paul.marcoux/Postdoc/Python/sopa/workflow/data/Nathalie_test/data/Nathalie_test_1_FFPE_HUMAN_IO60_Scan1_ROI_1.ome.zarr/")
+sdata
+```
+
+```{python}
+# Modify values in "region" table from "cell_circles" to "cell_boundaries"
+sdata.tables["table"].obs["region"] = "cellpose_boundaries"
+
+# Link the AnnData table to the spatial element "cell_boundaries".
+sdata.set_table_annotates_spatialelement("table", region="cellpose_boundaries")
+
+adata = sdata['table']
+# We store the counts in the layers in case we need it for future purposes. In this analysis guide, we don't use it.
+adata.layers["counts"] = adata.X.copy()
+```
+
+```{python}
+# Plot all cells by total transcripts counts. This step may take 1-2 mins.
+sdata.pl.render_shapes("cellpose_boundaries").pl.show(title="")
+```
+
+```{python}
+normalize_single_codex_slide(adata,"test2",True)
+adata.layers["lognorm"] = adata.X.copy()
+```
+
+```{python}
+# PCA for dimension reduction further by UMAP for downstream analysis, which may take a few minutes
+sc.pp.pca(adata, n_comps=30)
+
+sc.pp.neighbors(adata, metric = 'cosine')
+# clustering with leiden. We use igraph here as it scales better. The resolution is a hyper-parameter. A higher resolution will output more clusters.
+sc.tl.leiden(adata, flavor = "igraph", n_iterations=-1, resolution = 0.5)
+```
+
+```{python}
+# Run UMAP, which may take > 20 mins.
+sc.tl.umap(adata)
+sc.pl.umap(adata, color = 'leiden')
+```
+
+```{python}
+sdata.pl.render_shapes(
+    element="cellpose_boundaries",
+    color="leiden",
+    table_name="table",
+).pl.show()
+```
+
+```{python}
+marker_list_heatmap = [
+    # T cells
+    'CD3', 'CD4', 'CD8', 'CD45RA', 'CD45RO', 'CCR7', 'TCF1', 'CD45',
+
+    # Activation / Exhaustion
+   # 'CXCR3',
+    'TIM3', 'LAG3',
+
+    # Treg
+    'FoxP3', 'Helios', 'CD25','CD38',
+
+    # Tfh
+   'PD1','ICOS','CXCR5',
+    # 'CD69',
+
+    # NK
+    'CD56', 'Granzyme B',
+
+    # B cells
+    'CD19', 'CD20', 'CD79a', 'PAX5', 'BCL-2','BCL-6','ki-67',
+    # 'Kappa','HLADR',
+
+    # Myeloid / Macrophages / DC
+    'CD15','CD11b', 'CD11c', 'CD68', 'CD163',
+
+    # Stromal / Endothelial
+    'CD31', 'CD34', 'Collagen IV', 'CD90', 'Podoplanin'
+    # ,'NaKATPase',
+    #
+    # # Proliferation / Apoptosis / Other
+    #  'cmyc', 'p53', 'IKZF3', 'IRF4', 'SPARC',
+    #
+    # 'PDL1', 'CD138', 'Lambda', 'NOXA', 'CD21'
+]
+
+```
+```{python}
+sc.pl.matrixplot(
+    adata,
+    groupby="leiden",
+    var_names=marker_list_heatmap,
+    cmap="RdYlBu_r",
+    swap_axes=False,
+    use_raw=False,       # or True if you want raw counts
+    standard_scale="var", # optional: scale across genes
+    colorbar_title="",   # Remove colorbar title
+    show=False,          # Don't show immediately
+)
+```
+
